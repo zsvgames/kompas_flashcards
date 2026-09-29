@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Strany – flashcards</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--muted:#86868b;--line:#e5e5ea;--btn:#e9e9ed;--shadow:0 10px 40px rgba(0,0,0,.08)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--card:#1c1c1e;--text:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--btn:#2c2c2e;--shadow:0 10px 40px rgba(0,0,0,.5)}}
+:root[data-theme="dark"]{--bg:#000;--card:#1c1c1e;--text:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--btn:#2c2c2e;--shadow:0 10px 40px rgba(0,0,0,.5)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.app{height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;padding:16px 20px 20px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+h1{font-size:15px;font-weight:600;letter-spacing:.02em;margin:0}
+.count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:3px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:20px}
+.bar i{display:block;height:100%;width:0;background:var(--text);border-radius:3px;transition:width .35s ease}
+.stage{flex:1;perspective:1400px;min-height:0;position:relative;touch-action:pan-y}
+.card{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.8,.2,1);cursor:pointer}
+.card.flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;background:var(--card);border-radius:28px;box-shadow:var(--shadow);backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:28px 24px;display:flex;flex-direction:column;overflow:hidden}
+.front{align-items:center;justify-content:center;text-align:center}
+.dot{width:14px;height:14px;border-radius:50%;margin-bottom:22px}
+.num{font-size:13px;color:var(--muted);margin-bottom:10px;letter-spacing:.1em}
+.name{font-size:clamp(34px,11vw,48px);font-weight:700;letter-spacing:-.03em;line-height:1.05}
+.hint{position:absolute;bottom:22px;font-size:12px;color:var(--muted)}
+.back{transform:rotateY(180deg)}
+.back h2{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0 0 14px;display:flex;align-items:center;gap:10px}
+.back h2 i{width:10px;height:10px;border-radius:50%;flex:none}
+.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;margin:0 -8px;padding:0 8px}
+ul{list-style:none;margin:0;padding:0}
+li{font-size:15.5px;line-height:1.45;padding:11px 0;border-top:1px solid var(--line)}
+li:first-child{border-top:0}
+li b{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:3px}
+.actions{display:flex;gap:10px;margin-top:18px}
+button{font:inherit;border:0;border-radius:16px;height:52px;background:var(--btn);color:var(--text);font-size:15px;font-weight:600;cursor:pointer;transition:transform .12s,opacity .2s;flex:1}
+button:active{transform:scale(.96)}
+button.main{background:var(--text);color:var(--bg)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>Politické strany</h1><span class="count" id="count"></span></header>
+  <div class="bar"><i id="prog"></i></div>
+  <div class="stage" id="stage">
+    <div class="card" id="card">
+      <div class="face front" id="front"></div>
+      <div class="face back" id="back"></div>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="prev">← Předchozí</button>
+    <button class="main" id="next">Další →</button>
+  </div>
+</div>
+<script>
+const DATA=[
+{n:"PŘÍSAHA",c:"#1e40af",p:[["Lídr","Robert Šlachta"],["Hlavní téma","Boj proti korupci a organizovanému zločinu; pevná kontrola státu nad pořádkem"],["Stát","Jasná role při ochraně občanů a prosazování zákonů; transparentnost a odpovědnost úředníků"],["Ekonomika","Podpora podnikání"]]},
+{n:"PIRÁTI",c:"#7c3aed",p:[["Vize","Spravedlivá, svobodná a propojená společnost; rozhodování na základě faktů a demokracie"],["Sociální oblast","Kvalitní školství, zdravotnictví a sociální péče; ochrana slabších"],["Stát","Odpovědné hospodaření, investice do budoucnosti, spravedlivé podmínky nejen pro velké firmy"],["Hodnoty","Otevřenost, zapojení občanů, svoboda projevu, ochrana soukromí; technologie a inovace"],["Liberální politika","Legalizace konopí, manželství pro všechny"]]},
+{n:"ANO",c:"#4338ca",p:[["Stát","Silný stát, který efektivně řídí ekonomiku a veřejné služby; rychlá a efektivní rozhodnutí"],["Ekonomika","Podpora podnikání, určitá míra podnikatelské svobody"],["Sociální oblast","Stabilita: zvyšování důchodů, podpora chudších rodin"],["Energetika","Soběstačnost + rozumná podpora obnovitelných zdrojů"]]},
+{n:"MOTORISTÉ",c:"#0284c7",p:[["Priorita","Doprava a infrastruktura: nové dálnice, modernizace železnic"],["Ekonomika","Zjednodušení administrativy, nižší daňová zátěž pro podnikatele"],["Vzdělávání","Investice do školství a vědeckého výzkumu, inovace"],["Hodnoty","Méně byrokracie, větší svoboda jednotlivce a odpovědnost"],["Kontroverze","Podpořili formulář, kde u pohlaví byla možnost „psychická porucha“"]]},
+{n:"SPD",c:"#b91c1c",p:[["Lídr","Tomio Okamura (Svoboda a přímá demokracie)"],["Hodnoty","Tradiční hodnoty, rodina a národní suverenita; proti manželství pro všechny"],["Stát","Silný stát chránící české zájmy před vnějšími vlivy"],["Postoje","Proti nelegální migraci a vlivu EU"],["Ekonomika","Malí a střední podnikatelé, živnostníci, široká střední třída"]]},
+{n:"SPOLU",c:"#1d4ed8",p:[["Složení","Koalice ODS, KDU-ČSL, TOP 09"],["Hodnoty","Demokracie, bezpečnost, prosperita; varuje před autoritářskými tendencemi opozice; otevřenost k různým kulturám"],["Program","Obranyschopnost, hospodářský růst, dostupné bydlení, kvalitní zdravotní péče"],["Zahraničí","Členství v NATO a EU; evropské a transatlantické hodnoty"],["Ekonomika","Větší svoboda podnikatelů v rozhodování"]]},
+{n:"STAN",c:"#0d9488",p:[["Vize","Kvalitní život pro všechny; odpovědné a transparentní řízení státu"],["Stát","Větší slovo lidí v místě, kde žijí (decentralizace)"],["Ekonomika","Podnikání, inovace, udržitelnost; rovnováha mezi rozvojem a životním prostředím"],["Sociální oblast","Dostupné veřejné služby, vzdělávání a zdravotní péče"],["Plán","Finanční podpora + zjednodušené podmínky pro malé podnikatele"]]},
+{n:"STAČILO!",c:"#dc2626",p:[["Bydlení a ceny","Levné družstevní a obecní byty; zrušení DPH na základní potraviny"],["Demokracie","Zrušení Senátu, více referend"],["Suverenita","Referendum o vystoupení z EU a NATO; proti euru; velké firmy (ČEZ) ve vlastnictví státu"],["Sociální oblast","Jisté důchody, stejné možnosti ve zdravotnictví a školství"],["Postoje","Proti zbraním pro Ukrajinu (důraz na mír); kritika Green Dealu a některých neziskovek ve školách"],["Stát","Silný stát, kontrola klíčových oblastí"]]}
+];
+const $=id=>document.getElementById(id);
+let deck=[],i=0;
+const card=$('card');
+function start(list){deck=list.slice();i=0;render()}
+function render(anim=true){
+  const d=deck[i];card.classList.remove('flip');
+  $('front').innerHTML=`<div class="dot" style="background:${d.c}"></div><div class="num">${DATA.indexOf(d)+1} / ${DATA.length}</div><div class="name">${d.n}</div><div class="hint">Klepni pro otočení</div>`;
+  $('back').innerHTML=`<h2><i style="background:${d.c}"></i>${d.n}</h2><div class="scroll"><ul>${d.p.map(x=>`<li><b>${x[0]}</b>${x[1]}</li>`).join('')}</ul></div>`;
+  $('count').textContent=`${i+1} z ${deck.length}`;
+  $('prog').style.width=(i+1)/deck.length*100+'%';
+}
+function go(s){i=(i+s+deck.length)%deck.length;render()}
+card.onclick=()=>card.classList.toggle('flip');
+$('next').onclick=()=>go(1);$('prev').onclick=()=>go(-1);
+let x0=null;const st=$('stage');
+st.addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});
+st.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>60){go(dx<0?1:-1)}});
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1);if(e.key===' '){e.preventDefault();card.classList.toggle('flip')}});
+start(DATA);
+</script>
+</body>
+</html>
